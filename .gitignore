@@ -1,0 +1,17 @@
+.venv/
+venv/
+
+.pytest_cache/
+pytest_cache/
+
+chroma_db/
+
+chatui/__pycache__/
+config/__pycache__/
+embedding_service/__pycache__/
+embedding_service/test/__pycache__/
+ingestion/__pycache__/
+ingestion/test/__pycache__/
+query_service/__pycache__/
+query_service/graph/__pycache__/
+query_service/test/__pycache__/
