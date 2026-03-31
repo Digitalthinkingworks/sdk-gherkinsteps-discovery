@@ -16,5 +16,7 @@ result = run_pipeline(crawler_mode='local', sdk_config={'supply-chain-sdk': '2.3
 print(result)
 "
 
+python -m pytest query_service/tests/ -v
+
 ollama serve
 ollama pull mistral
