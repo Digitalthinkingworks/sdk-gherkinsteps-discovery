@@ -1,0 +1,188 @@
+# config/sdk_discovery.yml
+# Single source of truth for all SDK Discovery configuration.
+# Change values here — never in application code.
+
+# ── Ingestion: crawler config ─────────────────────────────────────────────────
+ingestion:
+  crawler_mode: local            # "local" | "github"
+
+  local:
+    root_dir: ./sample_sdks     # LocalCrawler reads from here — no more constructor arg
+
+  github:
+    # token loaded from env: GITHUB_TOKEN — never store tokens in config files
+    base_url: https://api.github.com   # override for GitHub Enterprise
+    repos:
+      - org/supply-chain-sdk           # "org/repo-name" format
+      - org/order-management-sdk
+    branch: main                       # branch to crawl (default: repo default branch)
+
+  sdks:
+    supply-chain-sdk:
+      version: "2.3.1"
+      maven_group_id: com.company.sdks
+
+  # Files to index — matched against relative file path (case-insensitive glob)
+  include_patterns:
+    - "**/*Steps.java"         # Cucumber step definition classes
+    - "**/*StepDefs.java"      # alternate naming convention
+    - "**/README.md"
+    - "**/README.txt"
+    - "**/*.md"                # all markdown docs
+    - "**/*.txt"               # plain text docs
+    - "**/*.html"              # HTML docs
+    # Enable these when PDF/DOCX parsing is added in Phase 2:
+    # - "**/*.pdf"
+    # - "**/*.docx"
+
+  # Files to always skip — applied after include_patterns
+  # Prevents credentials, config, build files from being indexed
+  exclude_patterns:
+    - "**/*.properties"
+    - "**/*.yml"
+    - "**/*.yaml"
+    - "**/*.xml"
+    - "**/*.json"
+    - "**/*.config"
+    - "**/pom.xml"
+    - "**/.git/**"
+    - "**/target/**"          # Maven build output
+    - "**/node_modules/**"
+    - "**/*Test.java"         # test runner classes (not step defs)
+    - "**/*Config.java"
+    - "**/*Application.java"
+    - "**/*Controller.java"
+    - "**/*Service.java"
+    - "**/*Repository.java"
+
+# ── Embedding model ────────────────────────────────────────────────────────────
+embedding:
+  provider: local              # "local" | "ollama" | "openai" | "azure_openai"
+
+  local:
+    model: sentence-transformers/all-MiniLM-L6-v2         # all-mpnet-base-v2 — higher quality, slower (~420MB) | multi-qa-MiniLM-L6-cos-v1 — tuned for Q&A retrieval | paraphrase-multilingual-MiniLM-L12-v2 — multilingual support
+    service_url: http://localhost:8001/embed
+    max_batch_size: 64
+    dimension: 384
+
+  ollama:
+    model: nomic-embed-text    # best Ollama embedding model
+    base_url: http://localhost:11434
+    max_batch_size: 32
+    dimension: 768
+
+  openai:
+    model: text-embedding-3-small
+    # api_key loaded from env: OPENAI_API_KEY
+    max_batch_size: 512
+    dimension: 1536
+
+  azure_openai:
+    model: text-embedding-3-small
+    deployment_name: sdk-embedding
+    # api_key loaded from env: AZURE_OPENAI_API_KEY
+    # endpoint loaded from env: AZURE_OPENAI_ENDPOINT
+    max_batch_size: 256
+    dimension: 1536
+
+# ── LLM (synthesiser node) ────────────────────────────────────────────────────
+llm:
+
+  # RAG synthesiser: generates the usage_hint field in the result card
+  rag_enabled: false         # false = deterministic template-based hint, no LLM call
+
+  # Scaffold endpoint: generates the full Gherkin scenario
+  scaffold_enabled: true     # true = LLM writes the scenario
+
+  provider: ollama           # "ollama" | "openai" | "azure_openai" | "anthropic"
+
+  ollama:
+    model: mistral
+    base_url: http://localhost:11434
+    timeout_seconds: 120
+
+  openai:
+    model: gpt-4o-mini
+    # api_key loaded from env: OPENAI_API_KEY
+    timeout_seconds: 20
+
+  azure_openai:
+    model: gpt-4o-mini
+    deployment_name: sdk-llm
+    # api_key: AZURE_OPENAI_API_KEY
+    # endpoint: AZURE_OPENAI_ENDPOINT
+    timeout_seconds: 20
+
+  anthropic:
+    model: claude-sonnet-4-20250514
+    # api_key loaded from env: ANTHROPIC_API_KEY
+    timeout_seconds: 20
+
+# ── Vector store ───────────────────────────────────────────────────────────────
+vector_store:
+  provider: chroma             # "chroma" | "weaviate" | "qdrant"
+
+  chroma:
+    path: ./chroma_db
+    collection: sdk_scenarios
+
+  weaviate:                    # Phase 2 — enable by setting provider: weaviate
+    url: http://localhost:8080
+    api_key: ""                # set via WEAVIATE_API_KEY env var in production
+    class_name: SdkStep
+
+  qdrant:                      # Phase 2 — enable by setting provider: qdrant
+    url: http://localhost:6333
+    api_key: ""                # set via QDRANT_API_KEY env var in production
+    collection: sdk_scenarios
+
+# ── Accuracy and hallucination prevention ─────────────────────────────────────
+accuracy:
+  confidence_threshold: 0.35   # below this → clarify path, not synthesise
+  top_k_retrieval: 5           # candidates fetched per query
+  top_k_clarify: 3             # options shown when clarifying
+  min_query_length: 3          # reject queries shorter than this
+
+  # LLM prompt guardrails — injected into every synthesiser prompt
+  llm_guardrails:
+    - "Only describe steps and methods explicitly present in the retrieved metadata."
+    - "Do not invent parameter names, method signatures, or scenario descriptions."
+    - "If you are unsure, say so rather than guessing."
+    - "Never suggest steps from a different SDK than the one retrieved."
+
+  # Per-SDK score boosting — if query mentions SDK name explicitly, boost its results
+  sdk_name_boost: true
+
+# ── Metadata enrichment (external integrations) ───────────────────────────────
+enrichment:
+
+  jfrog:
+    enabled: false             # set true when JFROG_URL + JFROG_TOKEN are set
+    base_url: ""               # e.g. https://company.jfrog.io/artifactory
+    # api_token loaded from env: JFROG_TOKEN
+    repo_key: libs-release     # Artifactory repo to query for version info
+    timeout_seconds: 10
+
+  confluence:
+    enabled: false             # set true when CONFLUENCE_URL + CONFLUENCE_TOKEN are set
+    base_url: ""               # e.g. https://company.atlassian.net/wiki
+    # api_token loaded from env: CONFLUENCE_TOKEN
+    # username loaded from env: CONFLUENCE_USERNAME
+    space_keys: []             # ["SDK", "ARCH"] — spaces to search for SDK docs
+    timeout_seconds: 15
+
+  sharepoint:
+    enabled: false
+    site_url: ""               # e.g. https://company.sharepoint.com/sites/SDKDocs
+    # client_id loaded from env: SHAREPOINT_CLIENT_ID
+    # client_secret loaded from env: SHAREPOINT_CLIENT_SECRET
+    # tenant_id loaded from env: SHAREPOINT_TENANT_ID
+    library_names: []          # ["SDK Documentation", "Architecture"]
+    timeout_seconds: 20
+
+# ── API service ────────────────────────────────────────────────────────────────
+api:
+  host: 0.0.0.0
+  port: 8000
+  query_service_port: 8000
+  embedding_service_port: 8001

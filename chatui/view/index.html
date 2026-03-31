@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SDK Step Discovery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/view/static/app.css">
+</head>
+<body>
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+  </div>
+  <div class="hd-text">
+    <h1>SDK Step Discovery</h1>
+    <p>Ask in plain English — get the right Cucumber step instantly</p>
+  </div>
+  <div class="status">
+    <div class="dot on" id="statusDot"></div>
+    <span id="statusText">Service online</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- ── Chat panel ── -->
+  <div class="chat-panel">
+    <div class="messages" id="messages">
+      <div class="msg bot">
+        <div class="bubble">
+          Hi! I can help you find the right Cucumber step definition from the SDK library.<br><br>
+          Try asking things like:<br>
+          <em>"How do I add an item to inventory?"</em><br>
+          <em>"Step to verify an order is shipped"</em><br>
+          <em>"I need to test low stock tracking"</em>
+        </div>
+        <span class="msg-time">now</span>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="sdk-filter">
+        <span>SDK</span>
+        <select id="sdkFilter">
+          <option value="">All SDKs</option>
+        </select>
+      </div>
+      <div class="input-row">
+        <textarea
+          id="queryInput"
+          placeholder="Describe what you want to test…"
+          rows="1"
+        ></textarea>
+        <button class="send-btn" id="sendBtn" title="Send (Enter)">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+      <div class="hint-text">Enter to send · Shift+Enter for new line</div>
+    </div>
+  </div>
+
+  <!-- ── Result panel ── -->
+  <div class="result-panel" id="resultPanel">
+    <div class="empty-state" id="emptyState">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <h2>No result yet</h2>
+      <p>Ask a question in the chat and the matching step definition will appear here.</p>
+    </div>
+  </div>
+</div>
+<script src="/view/static/app.js" defer></script>
+</body>
+</html>
